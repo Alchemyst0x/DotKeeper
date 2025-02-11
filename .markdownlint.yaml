@@ -1,0 +1,19 @@
+MD001: false # MD001/heading-increment
+MD013: false # MD013/line-length
+MD014: false # MD014/commands-show-output
+MD033: false # MD033/no-inline-html
+MD040: false # MD040/fenced-code-language
+MD041: false # MD041/first-line-heading/first-line-h1
+MD046: false # MD046/code-block-style
+MD036: false # MD036/no-emphasis-as-heading
+MD024: # MD024/no-duplicate-heading
+  siblings_only: true
+line-length:
+  line_length: 100
+  heading_line_length: 100
+  code_block_line_length: 100
+  code_blocks: true
+  tables: true
+  headings: true
+  strict: false
+  stern: false

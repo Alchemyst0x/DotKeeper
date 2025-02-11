@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+[[ -n "${BASH_VERSION:-}" ]] && NAME="${BASH_SOURCE[0]}" || NAME="$0"
+HERE="$(cd "$(dirname "$NAME")" && pwd)" NAME="$HERE/$(basename "$NAME")"
+ACTIVATE="$(dirname "$HERE")/activate"
+LOG_NAME="$(basename "$NAME")"
+
+export NO_COLOR=1 LOG_FILE="/dev/null" NONINTERACTIVE=1 LOG_NAME
+
+# shellcheck source=../activate
+[[ -s "$ACTIVATE" ]] && \. "$ACTIVATE" &>/dev/null
+
+echo_and_exec() {
+  local target_file="$1" exe_file="$2" exe_name
+  shift 2
+  local flags=("$@")
+  exe_name="$(basename "$exe_file")"
+  msg 'i' "Processing: '$target_file' with \
+    '$exe_name' and flags '${flags[*]}'..."
+  if "$exe_file" "${flags[@]}" "$target_file"; then
+    msg 's' "Completed processing: '$target_file' with '$exe_name'"
+  else
+    msg 'w' "'$exe_name' returned a non-zero status when processing \
+      '$target_file'. This is probably not an issue, but may be worth \
+      noting if there are issues otherwise."
+  fi
+}
+
+if [[ "$#" -eq 2 && -d "$1" && -f "$2" ]]; then
+  workspace_dir="$1" target_file="$2" flags=()
+  if cd "$workspace_dir"; then
+    if [[ -d "$workspace_dir/.venv" ]]; then
+      venv_dir="$workspace_dir/.venv"
+      if [[ -x "$venv_dir/bin/docformatter" ]]; then
+        exe_file="$venv_dir/bin/docformatter" flags=("--in-place")
+        echo_and_exec "$target_file" "$exe_file" "${flags[@]}"
+      fi
+    fi
+  fi
+fi

@@ -1,0 +1,33 @@
+{
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.fixAll.pylance": "explicit",
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file"
+  },
+  "bashIde.includeAllWorkspaceSymbols": true,
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "cmd": "${workspaceFolder}/scripts/vscode/on_save ${workspaceFolder} ${file}",
+        "match": "\\.py$"
+      },
+      {
+        "cmd": "prettier --write --tab-width 2 --prose-wrap always ${file}; markdownlint-cli2 --fix ${file}",
+        "match": "\\.md$"
+      },
+      {
+        "cmd": "taplo format ${file}",
+        "match": "\\.toml$"
+      }
+    ],
+    "showElapsed": true
+  },
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 20000
+}

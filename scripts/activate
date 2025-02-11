@@ -1,0 +1,347 @@
+# shellcheck shell=bash disable=SC1090,SC1091
+
+# Setup ------------------------------------------------------------------------
+
+FP="$0" WAS_SOURCED=0
+if [[ -n "${BASH_VERSION:-}" ]]; then
+  (return 0 2>/dev/null) && WAS_SOURCED=1 || :
+  FP="${BASH_SOURCE[0]}"
+elif [[ "${ZSH_EVAL_CONTEXT:-}" =~ :file$ ]]; then
+  WAS_SOURCED=1
+fi
+
+[[ "$WAS_SOURCED" == 0 ]] && { echo "Source me please!" && exit 1; }
+HERE="$(cd "$(dirname "$FP")" && pwd)" FP="$HERE/$(basename "$FP")"
+
+# Configurable variables -------------------------------------------------------
+
+PROJECT_ROOT="${PROJECT_ROOT:-"$(dirname "$HERE")"}"
+
+VENV_ACTIVATE="${VENV_ACTIVATE:-"$PROJECT_ROOT/.venv/bin/activate"}"
+
+DOTENV="${DOTENV:-"$PROJECT_ROOT/.env"}"
+
+LOGS_DIR="${LOGS_DIR:-"$PROJECT_ROOT/logs"}"
+
+LOG_FILE="scripts.log"
+
+# This enables debug logging if non-empty
+DEBUG="${SHELL_SCRIPTS_DEBUG:-}"
+
+# Paths to avoid (based on substring) when searching for files to be sourced
+IGNORE_PATHS=("docker" ".git")
+
+# Pre-commit hooks for which to check and install if missing
+PRE_COMMIT_HOOKS=("pre-push" "commit-msg")
+
+# Files to be sourced AFTER the main script logic is completed, if present
+SOURCE_AFTER=("$HERE/setup_op")
+
+# Functions --------------------------------------------------------------------
+
+# --- Predicates
+
+# Check for command $1 availability
+if_cmd() { [[ "$(command -v "$1")" ]]; }
+
+# If $1 is a string matching any of Y/y/Yes/yes/T/t/True/true/1, ...
+if_truthy() { [[ "$1" =~ ^([Yy]|[Yy][Ee][Ss]|[Tt]|[Tt][Rr][Uu][Ee]|1)$ ]]; }
+
+# Source $1 if $1 is a regular, non-empty file
+src_if_file() { [[ -s "$1" ]] && \. "$1"; }
+
+# Source $1 if $1 is a regular, non-empty file and command $2 exists
+src_file_if_cmd() { [[ -s "$1" ]] && "$(command -v "$2")" && \. "$1"; }
+
+# --- Timestamps
+
+unix_time() { date +%s; }
+
+# Cross-system compatible ISO 8601 timestamp
+iso_time() { date -u +"%Y-%m-%dT%H:%M:%S%z" |
+  sed 's/\(.*\)\([+-]\)\([0-9]\{2\}\)\([0-9]\{2\}\)$/\1\2\3:\4/'; }
+
+# --- String Functions
+
+# Convert $1 to lower case
+to_lower() { tr '[:upper:]' '[:lower:]'; }
+
+# Convert $1 to upper case
+to_upper() { tr '[:lower:]' '[:upper:]'; }
+
+# Reverse the case of $1 (e.g., uPPER to Upper)
+rev_case() { tr 'a-zA-Z' 'A-Za-z'; }
+
+# Remove sequences of more than one whitespace from $1
+rm_xsp() { tr -s '[:blank:]'; }
+
+# --- Color Functions
+
+# Strip ANSI escape sequences from $1
+strip_color() { sed -E 's/\x1B\[[0-9;]*[mK]//g'; }
+
+# Unset/reset colored outputs to terminal defaults
+unset_color() { printf "\x1b[0m"; }
+
+# Convert a 6-length hexadecimal character string $1 to R G B color code format
+hex_to_rgb() { local hex="${1#"#"}" && printf '%s %s %s' \
+  $((16#${hex:0:2})) $((16#${hex:2:2})) $((16#${hex:4:2})); }
+
+# Set the FOREGROUND color to hex color string $1
+color_fg() {
+  [[ "$#" -ne 1 || -z "$1" || -n "${NO_COLOR:-}" ]] && return 0
+  local r g b hex="$1"
+  IFS=' ' read -r r g b <<<"$(hex_to_rgb "$hex")"
+  printf '\x1b[38;2;%b;%b;%bm' "$r" "$g" "$b"
+}
+
+# Set the BACKGROUND color to hex color string $1
+color_bg() {
+  [[ "$#" -ne 1 || -z "$1" || -n "${NO_COLOR:-}" ]] && return 0
+  local r g b hex="$1"
+  IFS=' ' read -r r g b <<<"$(hex_to_rgb "$hex")"
+  printf '\x1b[48;2;%b;%b;%bm' "$r" "$g" "$b"
+}
+
+# Print a message $1 with foreground color $2 and background color $3
+ctext() {
+  color_fg "${2:-}" && color_bg "${3:-}"
+  printf '%s' "${1:-}" && unset_color
+}
+
+# --- Logging Functions
+
+if [[ "${LOG_FILE:-}" != *"null"* ]]; then
+  LOG_FILE="$LOGS_DIR/$(basename "$LOG_FILE")"
+  mkdir -p "$(dirname "$LOG_FILE")" && touch "$LOG_FILE"
+fi
+
+_log_label() {
+  local red1="#DC143C"    red2="#F50505"
+  local white="#DEEEED"   black="#191825"
+  local green="#95CD1D"   cyan="#66D9EF"
+  local orange="#FF911C"  yellow="#FFEC80"
+  local magenta="#FF0C8A" label
+
+  case "$(printf '%s' "${1:-}" | to_lower)" in
+    0 | 00 | x | emerg) label="$(ctext "[ EMERG   ]" "$white"   "$red1")"  ;;
+    1 | 10 | a | alert) label="$(ctext "[ ALERT   ]" "$red1"    "$white")" ;;
+    2 | 20 | c | crit)  label="$(ctext "[ CRIT    ]" "$red2"    "$black")" ;;
+    3 | 30 | e | err*)  label="$(ctext "[ ERROR   ]" "$red1"    "$black")" ;;
+    4 | 40 | w | warn)  label="$(ctext "[ WARNING ]" "$orange"  "$black")" ;;
+    5 | 50 | n | not*)  label="$(ctext "[ NOTICE  ]" "$yellow"  "$black")" ;;
+    6 | 60 | i | info)  label="$(ctext "[ INFO    ]" "$cyan"    "$black")" ;;
+    s | 65 | ok | suc*) label="$(ctext "[ SUCCESS ]" "$green"   "$black")" ;;
+    7 | 70 | d | deb*)  label="$(ctext "[ DEBUG   ]" "$magenta" "$black")" ;;
+  *) return 1 ;;
+  esac
+
+  echo -en "$label"
+}
+
+# Log a message $2 at level $1; if only provided $1, log $1 at 'info' level
+msg() {
+  local record timestamp host level msg
+
+  if ! level="$(_log_label "${1:-}")"; then
+    level="$(_log_label "info")"
+    msg="$(echo -e "$*" | rm_xsp)"
+  else
+    shift
+    msg="$(echo -e "$*" | rm_xsp)"
+  fi
+
+  timestamp="$(iso_time)"
+  host="${LOG_NAME:-"$(hostname)"}"
+  record="${level}[ $timestamp ][ $host ] $msg"
+
+  [[ -n ${NO_COLOR} ]] && record=$(echo -e "$record" | strip_color)
+
+  if [[ "$record" == *"DEBUG"* ]]; then
+    if [[ -z "${DEBUG:-}" ]]; then return; else
+      echo -e "$record" | tee >(strip_color >>"$LOG_FILE") >&2
+      return
+    fi
+  fi
+  echo -e "$record" | tee >(strip_color >>"$LOG_FILE")
+}
+
+alias log='msg'
+alias log_msg='msg'
+
+# --- Internal Functions
+
+_should_ignore() {
+  for ignored in "${IGNORE_PATHS[@]}"; do
+    if [[ "$1" == *"$ignored"* ]]; then
+      msg 'd' "Ignoring $1 because it is one of: ${IGNORE_PATHS[*]}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+_find_dotenv() {
+  local target depth=0 max_depth=3 current_dir="$1" file_name="$2"
+  msg 'd' "Finding dotenv ..."
+  while [[ "$current_dir" != "/" && "$depth" -lt "$max_depth" ]]; do
+    target="$current_dir/$file_name"
+    msg 'd' "Trying: '$target' ..."
+    if [[ -e "$target" ]]; then
+      export DOTENV="$target"
+      return 0
+    fi
+    current_dir="$(dirname "$current_dir")"
+    ((depth++))
+  done
+
+  return 1
+}
+
+_source_files() {
+  for file in "$@"; do
+    if [[ -s "$file" ]]; then
+      if  ! _should_ignore "$file"; then
+        msg 'd' "Sourcing file: '$file'" && \. "$file"
+      else msg 'd' "Ignoring file: '$file'"; fi
+    fi
+  done
+}
+
+_check_last_updated() {
+  local key="${1:-"LAST_UPDATE"}" max_age="${2:-86400}"
+  local current_time last_update action_fn="${3:-}"
+
+  current_time="$(unix_time)"
+
+  last_update="$(
+    awk -F'=' '/^(export )?'"$key"'=/ {print $2}' "$DOTENV" 2>/dev/null
+  )"
+
+  if [[ -z "$last_update" ]] || ((current_time - last_update > max_age)); then
+    if [[ -z "$last_update" ]]; then
+      echo "${key}=${current_time}" >>"$DOTENV"
+    else
+      awk '!/^(export )?'"$key"'=/ {print}
+      END {print "'"$key"'='"$current_time"'"}' "$DOTENV" >"${DOTENV}.tmp" &&
+        mv "${DOTENV}.tmp" "$DOTENV"
+    fi
+
+    if [[ -n "$action_fn" ]] && command -v "$action_fn" >/dev/null 2>&1; then
+      "$action_fn"
+    fi
+    return 0
+
+  fi
+  return 1
+}
+
+_setup_dotenv() {
+  local start_time
+  start_time=$(date +%s.%N)
+
+  [[ ! -e "${DOTENV:-}" ]] &&  {
+    msg 'd' "Dotenv does not exist at '${DOTENV:-}' - searching ..."
+    _find_dotenv "$HERE" "$(basename "${DOTENV:-".env"}")"
+    [[ -n "${DOTENV:-}" ]] && msg 'd' "DOTENV is now set to: $DOTENV"
+  }
+
+  if [[ -e "${DOTENV:="$PROJECT_ROOT/.env"}" ]]; then
+    msg 'i' "Sourcing dotenv: $DOTENV" && \. "$DOTENV"
+  else msg 'i' "Creating dotenv: '$DOTENV'" && touch "$DOTENV"; fi
+
+  if ! grep -q 'PROJECT_ROOT=' "$DOTENV" 2>/dev/null; then
+    msg 'i' "Adding 'PROJECT_ROOT=$PROJECT_ROOT' to dotenv file at '$DOTENV'"
+    echo "PROJECT_ROOT=\"$PROJECT_ROOT\"" >>"$DOTENV"
+  fi
+
+  msg 'd' "_setup_dotenv setup took: \
+    $(echo "$(date +%s.%N) - $start_time" | bc) seconds"
+}
+
+_setup_venv() {
+  local start_time
+  start_time=$(date +%s.%N)
+
+  if [[ -s "$VENV_ACTIVATE" ]]; then
+    msg 'i' "Sourcing venv: $VENV_ACTIVATE"
+    \. "$VENV_ACTIVATE"
+
+  elif [[ ! -d "$PROJECT_ROOT/.venv" ]]; then
+    if [[ -s "$PROJECT_ROOT/pyproject.toml" ]]; then
+
+      # Added to fix errors from trying to sync without this file existing
+      touch "$PROJECT_ROOT/README.md"
+
+      if [[ $(command -v uv) ]] && cd "$PROJECT_ROOT"; then
+        msg 'i' "Setting up venv with 'uv sync --all-features' \
+          (this will only happen once) ..."
+        uv sync --all-extras && echo "... venv setup and synced!"
+      else
+        msg 'd' "Unable to locate venv and 'uv' \
+          is not installed or not in PATH - won't setup venv."
+      fi
+    fi
+  fi
+
+  msg 'd' "_setup_venv setup took: \
+    $(echo "$(date +%s.%N) - $start_time" | bc) seconds"
+}
+
+_update_pre_commit_hooks() {
+  pre-commit autoupdate && msg 's' "Pre-commit hooks updated."
+}
+
+_setup_pre_commit_hooks() {
+  if [[ ! -e "$PROJECT_ROOT/.git/hooks/pre-commit" ]]; then
+    pre-commit install --install-hooks
+  fi
+
+  for hook in "${PRE_COMMIT_HOOKS[@]}"; do
+    local _hook_path="$PROJECT_ROOT/.git/hooks/$hook"
+    if [[ ! -e "$_hook_path" ]]; then
+      msg 'd' "Hook '$hook' does not exist at path '$_hook_path' - installing"
+      pre-commit install --hook-type "$hook" &>/dev/null &&
+        msg 'i' "Installed pre-commit hook: $hook"
+    fi
+  done
+}
+
+_setup_pre_commit() {
+  if [[ $(command -v pre-commit) ]]; then
+    _setup_pre_commit_hooks
+    if _check_last_updated "PRE_COMMIT_LAST_UPDATE" 259200; then
+      msg 'i' "Pre-commit hooks haven't been updated in 3+ days. Updating ..."
+      _update_pre_commit_hooks
+    fi
+  else
+    msg 'e' "Command not found: 'pre-commit'. Exiting."
+    if [[ "$WAS_SOURCED" == 1 ]]; then return 1; else exit 1; fi
+  fi
+}
+
+_update_path() {
+  case ":${PATH}:" in
+    *":${HERE}:"*) return 0 ;;
+    *) export PATH="${HERE}:${PATH}" ;;
+  esac
+}
+
+# Main -------------------------------------------------------------------------
+
+main() {
+  {
+    _setup_dotenv
+    _setup_venv
+    _setup_pre_commit
+    _update_path
+  } && _source_files "${SOURCE_AFTER[@]}"
+}
+
+if [[ "${SOURCED:=}" == *":${FP}"* ]]; then
+  echo "Variables are already set!"
+  echo "To run again, do 'unset SOURCED' and source me again."
+  return 0
+else
+  main && export SOURCED="${SOURCED#:}:${FP%:}"
+fi

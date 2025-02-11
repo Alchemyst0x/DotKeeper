@@ -1,0 +1,255 @@
+[project]
+  description     = "DotKeeper is a dotfiles manager written in Python."
+  license         = { text = "Apache-2.0" }
+  name            = "DotKeeper"
+  readme          = "README.md"
+  requires-python = ">= 3.12"
+  version         = "0.1.0"
+
+  authors = [ { name = "Alchemyst0x", email = "dotkeeper+github@blockmage.dev" } ]
+
+  maintainers = [
+    { name = "Alchemyst0x", email = "dotkeeper+github@blockmage.dev" },
+  ]
+
+  dependencies = [
+    "annotated-types>=0.7.0",
+    "anyio>=4.8.0",
+    "boltons>=25.0.0",
+    "cryptography>=44.0.0",
+    "cyclopts>=3.7.0",
+    "httpx[http2]>=0.28.1",
+    "jinja2>=3.1.5",
+    "keyring>=25.6.0",
+    "libcst>=1.6.0",
+    "msgspec>=0.19.0",
+    "onepassword-sdk>=0.1.7",
+    "platformdirs>=4.3.6",
+    "pydantic-extra-types>=2.10.2",
+    "pydantic-settings>=2.7.1",
+    "pydantic>=2.10.6",
+    "pyperclip>=1.9.0",
+    "pyrage-stubs>=1.2.4",
+    "pyrage>=1.2.3",
+    "pyyaml>=6.0.2",
+    "rich>=13.9.4",
+    "structlog>=25.1.0",
+  ]
+
+  [project.scripts]
+    "dk" = "dotkeeper:main"
+
+[dependency-groups]
+  dev = [
+    "anyio>=4.8.0",
+    "codespell>=2.4.1",
+    "commitizen>=4.2.0",
+    "devtools>=0.12.2",
+    "docformatter>=1.7.5",
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.5",
+    "pre-commit>=4.1.0",
+    "pyfakefs>=5.7.4",
+    "pyright>=1.1.393",
+    "pytest-cov>=6.0.0",
+    "pytest>=8.3.4",
+    "ruff>=0.9.5",
+  ]
+
+  # ------------------------------- Build System -------------------------------
+
+[build-system]
+  build-backend = "hatchling.build"
+  requires      = [ "hatchling" ]
+
+[tool.hatch.metadata]
+  allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+  packages = [ "src/dotkeeper" ]
+
+  # ----------------------------------- uv -------------------------------------
+
+[tool.uv]
+  compile-bytecode = true
+  managed          = true
+  native-tls       = true
+
+  [tool.uv.pip]
+    compile-bytecode = true
+    require-hashes   = true
+
+  [tool.uv.workspace]
+    members = [  ]
+
+    # ---------------------------- Tools - Codespell ---------------------------
+
+[tool.codespell]
+  builtin      = "clear,code,informal,rare,usage"
+  ignore-words = ".ignorewords"
+
+  # --------------------------- Tools - Docformatter ---------------------------
+
+[tool.docformatter]
+  blank                   = false
+  force                   = false
+  make-summary-multi-line = false
+  pre-summary-newline     = false
+  recursive               = true
+  style                   = "numpy"
+  wrap-descriptions       = 110
+  wrap-summaries          = 110
+
+  # ----------------------------- Tools - Pyright ------------------------------
+
+[tool.pyright]
+  include = [ "src/dotkeeper" ]
+
+  # ------------------------------ Tools - Pytest ------------------------------
+
+[tool.pytest.ini_options]
+  norecursedirs = [ ".venv" ]
+  testpaths     = [ "test", "tests" ]
+
+  addopts = [ "--durations=10", "--import-mode=importlib", "-s", "-v" ]
+
+  # ---------------------------- Tools - Commitizen ----------------------------
+
+[tool.commitizen]
+  major_version_zero       = true
+  name                     = "cz_conventional_commits"
+  tag_format               = "$version"
+  update_changelog_on_bump = true
+  version_provider         = "pep621"
+  version_scheme           = "pep440"
+
+  # ------------------------------- Tools - Ruff -------------------------------
+
+[tool.ruff]
+  exclude           = [  ]
+  force-exclude     = true
+  indent-width      = 4
+  line-length       = 110
+  respect-gitignore = true
+  target-version    = "py312"
+  unsafe-fixes      = true
+
+  [tool.ruff.format]
+    docstring-code-format      = true
+    docstring-code-line-length = "dynamic"
+    indent-style               = "space"
+    line-ending                = "lf"
+    quote-style                = "single"
+    skip-magic-trailing-comma  = false
+
+  [tool.ruff.lint]
+    fixable   = [ "ALL" ]
+    unfixable = [  ]
+
+    select = [
+      "A",     # flake8-builtins
+      "ANN",   # flake8-annotations
+      "ARG",   # flake8-unused-arguments
+      "ASYNC", # flake8-async
+      "B",     # flake8-bugbear
+      "C4",    # flake8-comprehensions
+      "DTZ",   # flake8-datetimez
+      "E",     # pycodestyle - error
+      "F",     # pyflakes
+      "FA",    # flake8-future-annotations
+      "FBT",   # flake8-boolean-trap
+      "FLY",   # flynt
+      "FURB",  # refurb
+      "I",     # isort
+      "ICN",   # flake8-import-conventions
+      "LOG",   # flake8-logging
+      "N",     # pep8-naming
+      "NPY",   # numpy-specific rules
+      "PERF",  # perflint
+      "PIE",   # flake8-pie
+      "PLC",   # pylint - convention
+      "PLE",   # pylint - error
+      "PLR",   # pylint - refactor
+      "PT",    # flake8-pytest-style
+      "PT",    # flake8-pytest-style
+      "PYI",   # flake8-pyi
+      "Q",     # flake8-quotes
+      "RET",   # flake8-return
+      "RSE",   # flake8-raise
+      "RUF",   # ruff-specific rules
+      "S",     # flake8-bandit
+      "SIM",   # flake8-simplify
+      "SLOT",  # flake8-slots
+      "T10",   # flake8-debugger
+      "TC",    # flake8-type-checking
+      "TID",   # flake8-tidy-imports
+      "UP",    # pyupgrade
+      "W",     # warning
+      "YTT",   # flake8-2020
+    ]
+
+    ignore = [
+      "ANN401",  # any-type
+      "N817",    # camelcase-imported-as-acronym
+      "N818",    # error-suffix-on-exception-name
+      "PLC0414", # useless-import-alias
+      "PLR2004", # magic-value-comparison
+      "PYI021",  # docstring-in-stub ()
+      "S108",    # hardcoded-temp-file
+      "S112",    # try-except-continue
+      "S311",    # suspicious-non-cryptographic-random-usage
+      "S602",    # subprocess-popen-with-shell-equals-true
+      "S603",    # subprocess-without-shell-equals-true
+      "S604",    # call-with-shell-equals-true
+      "S605",    # start-process-with-a-shell
+      "S606",    # start-process-with-no-shell
+      "S607",    # start-process-with-partial-path
+      "S701",    # jinja2-autoescape-false
+    ]
+
+    [tool.ruff.lint.isort]
+      known-first-party = [ "dotkeeper" ]
+
+    [tool.ruff.lint.per-file-ignores]
+      "*codemod*" = [
+        "ARG002", # unused-method-argument
+        "N802",   # invalid-function-name
+      ]
+      "*compat*" = [
+        "UP", # pyupgrade
+      ]
+      "*test*" = [
+        "D",    # pydocstyle
+        "Q000", # bad-quotes-inline-string
+        "S101", # assert
+      ]
+      "__init__.py" = [
+        "D103", # undocumented-public-function
+        "D104", # undocumented-public-package
+        "F401", # unused-import
+        "F403", # undefined-local-with-import-star
+        "F405", # undefined-local-with-import-star-usage
+      ]
+
+    [tool.ruff.lint.flake8-unused-arguments]
+      ignore-variadic-names = true
+
+    [tool.ruff.lint.flake8-annotations]
+      allow-star-arg-any = true
+
+    [tool.ruff.lint.flake8-quotes]
+      inline-quotes = "single"
+
+    [tool.ruff.lint.pydocstyle]
+      convention = "numpy"
+
+    [tool.ruff.lint.pylint]
+      allow-magic-value-types = [ "int" ]
+      max-args                = 20
+      max-bool-expr           = 10
+      max-branches            = 30
+      max-locals              = 15
+      max-nested-blocks       = 10
+      max-positional-args     = 20
+      max-returns             = 10
+      max-statements          = 75

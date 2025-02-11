@@ -1,0 +1,209 @@
+*
+!*/
+
+# -------------------------------- Not Ignored ---------------------------------
+
+# --- Git/GitHub/VCS
+!.dockerignore
+!.git-blame-ignore-revs
+!.gitattributes
+!.github/**/*
+!.gitignore
+!.gitkeep
+!.gitmodules
+!.keep
+!.pre-commit-config.*
+!.pre-commit-hooks.*
+
+# --- Common Project Files
+!ATTRIBUTION*
+!CHANGELOG*
+!CODE_OF_CONDUCT*
+!CONTRIBUTING*
+!COPYING*
+!FUNDING*
+!LICENSE*
+!NOTICE*
+!README*
+!SECURITY*
+!SUPPORT*
+
+# --- Files
+!.babelrc.*
+!.browserslistrc
+!.clippy.toml
+!.editorconfig
+!.eslintignore
+!.eslintrc.*
+!.flake8
+!.ignorewords
+!.isort.cfg
+!.markdownlint-cli2.*
+!.markdownlint.*
+!.npmrc
+!.prettier*
+!.python-version
+!.remarkrc
+!.remarkrc.*
+!.ruff.toml
+!.shellcheckrc
+!.stylelintrc*
+!.stylelintrc.*
+!.svgrrc
+!Cargo.lock
+!Cargo.toml
+!babel.*
+!browserslistrc
+!clippy.toml
+!codecov.*
+!config.toml
+!deno.json*
+!eslint.*
+!mkdocs.*
+!mypy.ini
+!package.json
+!package.yaml
+!panda.config.*
+!pnpm-*.*
+!pnpmfile.*
+!postcss.config.*
+!prettier.*
+!pyproject.toml
+!requirements*
+!ruff.toml
+!stylelint.*
+!stylelint.config.*
+!svgo.config.*
+!svgr.config.*
+!tailwind.config.*
+!taplo.toml
+!tox.ini
+!tsconfig.json
+!uv.lock
+!vite.config.*
+!webpack.config.*
+!workspace.toml
+
+# --- Cursor Files
+!/.cursorignore
+
+# --- agebox Files
+!*.agebox
+!.ageboxreg.yml
+
+# --- Blockmage Project Files
+!blockmage*config.*
+!blockmage.*
+
+# --- Directories
+!/.vscode/**/*
+!/bases/**/*
+!/components/**/*
+!/docker/**/*
+!/docs/**/*
+!/projects/**/*
+!/scripts/**/*
+!/src/**/*
+!/test/**/*
+!/tests/**/*
+
+# ------------------------------- Always Ignored -------------------------------
+
+# macOS
+*.icloud
+.Apple*
+.DS_Store
+.DocumentRevisions-V100/
+.LSOverride
+.Spotlight-V100/
+.VolumeIcon.icns
+._*
+.apdisk
+.com.apple.*
+.fseventsd
+
+# Hidden Caches
+*.*[Cc][Aa][Cc][Hh][Ee]*
+
+# Credentials
+*.cert
+*.crt
+*.env*
+*.key
+*.pem
+*.ppk
+*_ed25519
+*_rsa
+.htaccess
+1password-credentials.json
+env/
+envs/
+key
+key.*
+secring.*
+
+# Binary Data
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.so
+
+# Terraform/Packer
+*.box
+*.pdb
+*.tfstate*
+*_override.tf*
+.terraformrc
+override.tf*
+terraform.rc
+
+# Python
+*.py[cod]
+.venv/
+[Vv]irtual[Ee]nv/
+__pycache__/
+venv/
+
+# Rust
+*.rs.bk
+debug/
+target/
+
+# Go
+go.work
+go.work.sum
+
+# Node.js
+*.test
+*.tsbuildinfo
+.next/
+.npm/
+.nuxt/
+.nvm/
+.vercel/
+.yarn/
+jspm_packages/
+node_modules/
+web_modules/
+
+# Misc.
+*.log
+*.out
+*.tmp
+.[Tt]emp*
+.[Tt]rash*
+.history/
+.local/
+Network Trash Folder/
+[Tt]emporary*
+
+# Project-specific
+development/**/*
+docker/**/data/*
+docker/**/env/*
+
+# --------------------------------- Overrides ----------------------------------
+
+# Examples
+!*example*

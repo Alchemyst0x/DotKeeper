@@ -1,0 +1,30 @@
+# shellcheck shell=bash
+
+[[ -n "${NONINTERACTIVE:-}" ]] && return
+
+if [[ "$(hostname)" == "mbp.local" && "$(id -un)" == "anon" ]]; then
+  OP_SERVICE_ACCOUNT_TOKEN="$(/usr/bin/security find-generic-password \
+    -a "blockmage-op-settings" -s "blockmage" -w 2>/dev/null)"
+
+  OP_CONNECT_SERVER_TOKEN="$(/usr/bin/security find-generic-password \
+    -s "blockmage-op-connect" -w 2>/dev/null)"
+
+  if [[ -n "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
+    if [[ -n "${OP_VAULT_ID:-}" ]]; then
+      # export OP_VAULT_ID="dte2imftob2vc6drvyh4fx3azq"
+      export OP_VAULT_ID="mgi2lqkufnskobgpb74kgrkczy"
+    fi
+
+    if [[ -n "$OP_CONNECT_SERVER_TOKEN" ]]; then
+      unset OP_SERVICE_ACCOUNT_TOKEN
+      export OP_CONNECT_SERVER_TOKEN
+      LOG_NAME=$(basename "$0") \
+        msg 'i' "Exported 'OP_CONNECT_SERVER_TOKEN' to the environment."
+
+    else
+      export OP_SERVICE_ACCOUNT_TOKEN
+      LOG_NAME=$(basename "$0") \
+        msg 'i' "Exported 'OP_SERVICE_ACCOUNT_TOKEN' to the environment."
+    fi
+  fi
+fi

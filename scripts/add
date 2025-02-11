@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC1090
+
+[[ -n "${BASH_VERSION:-}" ]] && SELF="${BASH_SOURCE[0]}" || SELF="$0"
+HERE="$(cd "$(dirname "$SELF")" && pwd)" SELF="$HERE/$(basename "$SELF")"
+
+ACTIVATE="$(dirname "$HERE")/.venv/bin/activate"
+DOTENV="$(dirname "$HERE")/.env"
+
+[[ -s "$DOTENV" ]] && \. "$DOTENV" || :
+
+if [[ -s "$ACTIVATE" ]]; then
+  \. "$ACTIVATE"
+else
+  echo "Not found: '${ACTIVATE}' - Exiting." >&2
+  exit 1
+fi
+
+_add_base() { uv run poly create base --name "$1" &&
+  echo "Added base to Polylith: $1" || echo "Something went wrong!"; }
+
+_add_project() { uv run poly create project --name "$1" &&
+  echo "Added project to Polylith: $1" || echo "Something went wrong!"; }
+
+_add_component() { uv run poly create component --name "$1" &&
+  echo "Added component to Polylith: $1" || echo "Something went wrong!"; }
+
+if [[ "$#" -eq 2 ]]; then
+  cmd="$1"
+  shift 1
+  case "$cmd" in
+    *c*) _add_component "$1" ;;
+    *p*) _add_project "$1" ;;
+    *b*) _add_base "$1" ;;
+  esac
+else
+  echo -e "Usage:\n\t$(basename "$SELF") [component|project|base] NAME"
+  exit 1
+fi

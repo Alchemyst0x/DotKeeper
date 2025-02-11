@@ -1,0 +1,2 @@
+disable=SC2029,SC2139,SC2015
+external-sources=true

@@ -39,6 +39,9 @@
   [project.scripts]
     "dk" = "dotkeeper:main"
 
+  [project.urls]
+    "GitHub" = "https://github.com/Alchemyst0x/DotKeeper.git"
+
 [dependency-groups]
   dev = [
     "anyio>=4.8.0",

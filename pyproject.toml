@@ -68,6 +68,9 @@
 [tool.hatch.build.targets.wheel]
   packages = [ "src/dotkeeper" ]
 
+[tool.hatch.build.targets.sdist]
+  include = [ "src/dotkeeper/**/*.py" ]
+
   # ----------------------------------- uv -------------------------------------
 
 [tool.uv]
@@ -78,9 +81,6 @@
   [tool.uv.pip]
     compile-bytecode = true
     require-hashes   = true
-
-  [tool.uv.workspace]
-    members = [  ]
 
     # ---------------------------- Tools - Codespell ---------------------------
 

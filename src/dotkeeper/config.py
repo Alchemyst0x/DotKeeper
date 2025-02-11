@@ -4,18 +4,26 @@ from pathlib import Path
 import platformdirs
 import yaml
 
+from .models import Config
+
 APP_NAME = 'DotKeeper'
 APP_AUTHOR = 'Alchemyst0x'
 APP_VERSION = version('dotkeeper')
 
-DEFAULT_CONFIG = {
-    '$HOME/.bashrc': '$HOME/dotfiles/.bashrc',
-    '$HOME/.zshrc': '$HOME/dotfiles/.zshrc',
-    '$HOME/.config/nvim': '$HOME/dotfiles/nvim',
-    '$HOME/.config/alacritty': '$HOME/dotfiles/alacritty',
-    '$HOME/.gitconfig': '$HOME/dotfiles/.gitconfig',
-    '$HOME/.tmux.conf': '$HOME/dotfiles/.tmux.conf',
+_default_cfg = {
+    'dotfiles': {
+        'links': {
+            '$HOME/.bashrc': '$HOME/dotfiles/.bashrc',
+            '$HOME/.zshrc': '$HOME/dotfiles/.zshrc',
+            '$HOME/.config/nvim': '$HOME/dotfiles/nvim',
+            '$HOME/.config/alacritty': '$HOME/dotfiles/alacritty',
+            '$HOME/.gitconfig': '$HOME/dotfiles/.gitconfig',
+            '$HOME/.tmux.conf': '$HOME/dotfiles/.tmux.conf',
+        }
+    }
 }
+
+DEFAULT_CONFIG = Config.from_dict(_default_cfg)
 
 
 def get_config_dir() -> Path:
@@ -85,7 +93,7 @@ def ensure_config_exists() -> Path:
     config_file = config_dir / 'config.yml'
     if not config_file.exists():
         with config_file.open('w') as f:
-            yaml.safe_dump(DEFAULT_CONFIG, f, sort_keys=False)
+            yaml.safe_dump(DEFAULT_CONFIG.model_dump(), f, sort_keys=False)
 
     return config_file
 

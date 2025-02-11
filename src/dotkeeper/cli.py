@@ -14,6 +14,7 @@ from rich.prompt import Confirm
 from rich.table import Table
 
 from .config import ensure_config_exists
+from .models import Config
 
 load_dotenv()
 
@@ -216,7 +217,7 @@ def preview_changes(
 
 def load_yaml_config(
     config_path: Path | str,
-) -> dict[str, Any]:
+) -> Config:
     """Load and process a YAML configuration file.
 
     Parameters
@@ -226,13 +227,14 @@ def load_yaml_config(
 
     Returns
     -------
-    dict[str, Any]
+    Config
         Processed configuration with interpolated values
     """
-
     with Path(config_path).open() as f:
-        config = yaml.safe_load(f)
-    return cast(dict, recurse_yaml_config(config))
+        raw_config = yaml.safe_load(f)
+
+    processed_config = cast(dict, recurse_yaml_config(raw_config))
+    return Config.from_dict(processed_config)
 
 
 def get_config_file_path(

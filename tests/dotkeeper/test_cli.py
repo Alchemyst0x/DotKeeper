@@ -15,6 +15,7 @@ from dotkeeper.cli import (
     manage_symlinks,
     recurse_yaml_config,
 )
+from dotkeeper.config import Config
 
 
 def test_check_target_validity(fs: FakeFilesystem) -> None:
@@ -72,16 +73,18 @@ def test_load_yaml_config(fs: FakeFilesystem) -> None:
     config_path = Path('/home/user/config.yml')
 
     config_content = """
-    $HOME/.bashrc: $HOME/dotfiles/.bashrc
-    $HOME/.vimrc: $HOME/dotfiles/.vimrc
+    dotfiles:
+      links:
+        $HOME/.bashrc: $HOME/dotfiles/.bashrc
+        $HOME/.vimrc: $HOME/dotfiles/.vimrc
     """
 
     fs.create_file(config_path, contents=config_content)
 
     result = load_yaml_config(config_path)
 
-    assert '/home/user/.bashrc' in result
-    assert result['/home/user/.bashrc'] == '/home/user/dotfiles/.bashrc'
+    assert '/home/user/.bashrc' in result.dotfiles.links
+    assert result.dotfiles.links['/home/user/.bashrc'] == '/home/user/dotfiles/.bashrc'
 
 
 def test_get_config_file_path(fs: FakeFilesystem) -> None:
@@ -180,3 +183,32 @@ def test_check_symlink_status(fs: FakeFilesystem) -> None:
     fs.remove(str(source))
     fs.create_file(source, contents='different content')
     assert check_symlink_status(source, target) == 'NONLINK'
+
+
+def test_config_model() -> None:
+    """Test the Config model validation and structure."""
+    config_data = {
+        'dotfiles': {
+            'links': {
+                '$HOME/.bashrc': '$HOME/dotfiles/.bashrc',
+                '$HOME/.zshrc': '$HOME/dotfiles/.zshrc',
+            },
+            'obfuscate': {'file_names': ['secret.txt', 'private.key']},
+        }
+    }
+
+    config = Config.from_dict(config_data)
+
+    assert isinstance(config.dotfiles.links, dict)
+    assert '$HOME/.bashrc' in config.dotfiles.links
+    assert config.dotfiles.links['$HOME/.bashrc'] == '$HOME/dotfiles/.bashrc'
+    assert config.dotfiles.obfuscate['file_names'] == ['secret.txt', 'private.key']
+
+
+def test_empty_config() -> None:
+    """Test that empty config has expected defaults."""
+    config = Config.from_dict({})
+
+    assert isinstance(config.dotfiles.links, dict)
+    assert len(config.dotfiles.links) == 0
+    assert config.dotfiles.obfuscate['file_names'] == []
